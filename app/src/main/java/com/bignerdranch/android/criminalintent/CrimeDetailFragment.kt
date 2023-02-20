@@ -30,10 +30,7 @@ import android.graphics.*
 import android.os.Bundle
 import android.util.Log
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.Face
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetector
-import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.google.mlkit.vision.face.*
 import java.io.IOException
 
 private const val DATE_FORMAT = "EEE, MMM, dd"
@@ -241,6 +238,7 @@ class CrimeDetailFragment : Fragment() {
             }
 
             if (photoFile?.exists() == true) {
+                /*
                 binding.crimePhoto.doOnLayout { measuredView ->
                     val scaledBitmap = getScaledBitmap(
                         photoFile.path,
@@ -251,6 +249,7 @@ class CrimeDetailFragment : Fragment() {
                     binding.crimePhoto.tag = photoFileName
                     binding.crimePhoto.contentDescription =
                         getString(R.string.crime_photo_image_description)
+                 */
 
                     /*
                     Log.i("before_instance", "Before")
@@ -273,14 +272,23 @@ class CrimeDetailFragment : Fragment() {
                     /*
                     Works with only selfies due to rotation issue
                     Not sure what is happening with countouring*/
-                    var detector: FaceDetector? = null
+                    val photoBitMap = BitmapFactory.decodeFile(photoFile.toString())
+                    //var detector: FaceDetector? = null
 
-                    val image = InputImage.fromBitmap(scaledBitmap,270)
+                    //val image = InputImage.fromBitmap(scaledBitmap,270)
 
-                    //Only face detection
-                    detector = FaceDetection.getClient()
+                    //face detection + contour
+                    val options = FaceDetectorOptions.Builder()
+                        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
+                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+                        .build()
 
-                    /* countour - not sure how to display the result (use canvas)
+                    val detector = FaceDetection.getClient(options)
+
+                    val image = InputImage.fromBitmap(photoBitMap!!, 0)
+
+                    /* //countour - not sure how to display the result (use canvas)
+
                     detector = FaceDetection.getClient(
                         FaceDetectorOptions.Builder()
                             .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
@@ -294,6 +302,11 @@ class CrimeDetailFragment : Fragment() {
                                 faceCount +=1
                             }
                             Log.i("Face count",faceCount.toString())
+                            println("LINE308:CrimeDetailFrag Detector Success!\n Value of faces: $faces")
+                            photoBitMap.apply{
+                                binding.crimePhoto.setImageBitmap(drawWithRectangle(faces))
+                                binding.crimePhoto.setImageBitmap(drawContour(faces))
+                            }
                     }
                         .addOnFailureListener{e->
                             Log.i("Face detection exception",e.toString())
@@ -307,8 +320,147 @@ class CrimeDetailFragment : Fragment() {
                     getString(R.string.crime_photo_no_image_description)
             }
         }
+
+    }
+    fun Bitmap.drawWithRectangle(faces: List<Face>):Bitmap?{
+
+        println("LINE374:Inside the drawWithRectangles..")
+
+        // MAKE A COPY OF THE BITMAP USED THE CALL THE FUNCTION
+        val bitmap = copy(config, true)
+        // INITIALIZE A CANVAS WITH THE BITMAP
+        val canvas = Canvas(bitmap)
+        //FOR EACH FACE IN THE LIST OF FACES, CALL THE BOUNDINGBOX PROPERTY
+        for (face in faces){
+            println("LINE382: Iterating through faces, current value of face in faces: $face")
+            val bounds = face.boundingBox
+            // CALL A PAINT OBJECT, DEFINE A RECTANGLE WITH ITS APPLY METHOD
+            Paint().apply {
+                color = Color.RED
+                style = Paint.Style.STROKE
+                strokeWidth = 4.0f
+                isAntiAlias = true
+                // USE THE CANVAS DRAWRECT METHOD TO DRAW THE RECTANGLE
+                // THE CANVAS WAS INITILIZED WITH THE BITMAP SO THE RECTANGLES
+                // SHOULD BE DRAWN ON THE BITMAP.
+                canvas.drawRect(
+                    bounds,
+                    this
+                )
+            }
+        }
+        return bitmap
     }
 
+fun Bitmap.drawContour(faces: List<Face>):Bitmap?{
+    val bitmap = copy(config, true)
+    val canvas = Canvas(bitmap)
+    val paint = Paint()
+    paint.color = Color.BLUE
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 6F
+
+    faces.forEach { face ->
+        face.getContour(FaceContour.LEFT_EYE)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.RIGHT_EYE)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.LEFT_EYEBROW_TOP)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.LEFT_EYEBROW_BOTTOM)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.RIGHT_EYEBROW_TOP)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.RIGHT_EYEBROW_BOTTOM)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.NOSE_BRIDGE)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.NOSE_BOTTOM)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.LOWER_LIP_TOP)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.LOWER_LIP_BOTTOM)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.UPPER_LIP_BOTTOM)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.UPPER_LIP_TOP)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+        face.getContour(FaceContour.FACE)?.let { contour ->
+            drawContourFun(canvas, paint, contour)
+        }
+
+    }
+
+    /*
+    faces.forEach { face ->
+        face.getContour(FaceContour.FACE)?.let { contour ->
+            val path = Path()
+            contour.points.forEachIndexed { index, point ->
+                val position = PointF(point.x, point.y)
+                if (index == 0) {
+                    path.moveTo(position.x, position.y)
+                } else {
+                    path.lineTo(position.x, position.y)
+                }
+            }
+            path.close()
+            canvas.drawPath(path, paint)
+        }
+    }*/
+
+    /*
+    // MAKE A COPY OF THE BITMAP USED THE CALL THE FUNCTION
+    val bitmap = copy(config, true)
+    // INITIALIZE A CANVAS WITH THE BITMAP
+    val canvas = Canvas(bitmap)
+    //FOR EACH FACE IN THE LIST OF FACES, CALL THE BOUNDINGBOX PROPERTY
+    for (face in faces){
+        println("LINE366: Iterating through faces, current value of face in faces: $face")
 
 
+
+        val bounds = face.boundingBox
+        // CALL A PAINT OBJECT, DEFINE A RECTANGLE WITH ITS APPLY METHOD
+        Paint().apply {
+            color = Color.RED
+            style = Paint.Style.STROKE
+            strokeWidth = 4.0f
+            isAntiAlias = true
+            // USE THE CANVAS DRAWRECT METHOD TO DRAW THE RECTANGLE
+            // THE CANVAS WAS INITILIZED WITH THE BITMAP SO THE RECTANGLES
+            // SHOULD BE DRAWN ON THE BITMAP.
+            canvas.drawRect(
+                bounds,
+                this
+            )
+        }
+    }
+     */
+    return bitmap
+}
+
+fun drawContourFun(canvas: Canvas, paint: Paint, contour: FaceContour) {
+    val path = Path()
+    contour.points.forEachIndexed { index, point ->
+        val position = PointF(point.x, point.y)
+        if (index == 0) {
+            path.moveTo(position.x, position.y)
+        } else {
+            path.lineTo(position.x, position.y)
+        }
+    }
+    path.close()
+    canvas.drawPath(path, paint)
 }

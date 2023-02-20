@@ -33,7 +33,7 @@ class FaceDetectionAndC {
         Log.d(TAG, "analyzing the photo: ")
 
         // input Image for analyzing
-        val inputImage = InputImage.fromBitmap(bitmap, 90)
+        val inputImage = InputImage.fromBitmap(bitmap, 270)
 
         // start detecting
         detector.process(inputImage)
@@ -62,6 +62,14 @@ class FaceDetectionAndC {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 5.0f
             canvas.drawRect(boundingBox, paint)
+
+            val contourPaint  = Paint()
+            contourPaint.setColor(Color.RED);
+            contourPaint.setStyle(Paint.Style.STROKE);
+            contourPaint.setStrokeWidth(7.0f);
+
+
+
         }
 
         Log.d(TAG, "Completed drawing faces ...")
